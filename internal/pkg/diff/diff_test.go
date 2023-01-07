@@ -1,31 +1,33 @@
-package main
+package diff
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
 func TestDiff(t *testing.T) {
 	// define test case
-	original := &Signature{
+	original := &models.Signature{
 		FileSize: 100,
-		Chunks: []Chunk{
+		Chunks: []models.Chunk{
 			{Start: 0, Data: []byte("chunk 1")},
 			{Start: 8, Data: []byte("chunk 2")},
 			{Start: 16, Data: []byte("chunk 3")},
 		},
 	}
-	updated := &Signature{
+	updated := &models.Signature{
 		FileSize: 100,
-		Chunks: []Chunk{
+		Chunks: []models.Chunk{
 			{Start: 0, Data: []byte("chunk 1")},
 			{Start: 8, Data: []byte("chunk 2 modified")},
 			{Start: 16, Data: []byte("chunk 3")},
 		},
 	}
-	expected := &Delta{
-		Added: []Chunk{},
-		Modified: []Chunk{
+	expected := &models.Delta{
+		Added: []models.Chunk{},
+		Modified: []models.Chunk{
 			{Start: 8, Data: []byte("chunk 2 modified")},
 		},
 		Metadata: map[string]string{},
@@ -44,26 +46,26 @@ func TestDiff(t *testing.T) {
 
 func TestDiffChunks(t *testing.T) {
 
-	added := []Chunk{
+	added := []models.Chunk{
 		{Start: 24, Data: []byte("chunk 4")},
 		{Start: 32, Data: []byte("chunk 5")},
 	}
 
-	modified := []Chunk{
+	modified := []models.Chunk{
 		{Start: 8, Data: []byte("chunk 2 modified")},
 	}
 
-	original := &Signature{
+	original := &models.Signature{
 		FileSize: 100,
-		Chunks: []Chunk{
+		Chunks: []models.Chunk{
 			{Start: 0, Data: []byte("chunk 1")},
 			{Start: 8, Data: []byte("chunk 2")},
 			{Start: 16, Data: []byte("chunk 3")},
 		},
 	}
-	updated := &Signature{
+	updated := &models.Signature{
 		FileSize: 150,
-		Chunks: []Chunk{
+		Chunks: []models.Chunk{
 			{Start: 0, Data: []byte("chunk 1")},
 			{Start: 8, Data: []byte("chunk 2 modified")},
 			{Start: 16, Data: []byte("chunk 3")},
@@ -71,7 +73,7 @@ func TestDiffChunks(t *testing.T) {
 			{Start: 32, Data: []byte("chunk 5")},
 		},
 	}
-	expected := &Delta{
+	expected := &models.Delta{
 		Added:    added,
 		Modified: modified,
 		Metadata: map[string]string{},

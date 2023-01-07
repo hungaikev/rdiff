@@ -1,6 +1,10 @@
-package main
+package diff
 
-import "bytes"
+import (
+	"bytes"
+
+	"github.com/hungaikev/rdiff/internal/shared/models"
+)
 
 /*
 Diff compares the original and updated signatures and returns a Delta struct containing the differences between the two.
@@ -10,11 +14,11 @@ Diff compares the original and updated signatures and returns a Delta struct con
 3. If the number of chunks is the same, it compares the rolling hash values of each chunk using a for loop. If the hash values are different, it assumes that the chunk has been modified and adds it to the Modified field of the Delta struct.
 4. Returns the Delta pointer and a nil error value if successful, or returns a nil pointer and an error value if there was an error.
 */
-func Diff(original, updated *Signature) (*Delta, error) {
+func Diff(original, updated *models.Signature) (*models.Delta, error) {
 	// create a new delta
-	delta := &Delta{
-		Added:    make([]Chunk, 0),
-		Modified: make([]Chunk, 0),
+	delta := &models.Delta{
+		Added:    make([]models.Chunk, 0),
+		Modified: make([]models.Chunk, 0),
 		Metadata: make(map[string]string),
 	}
 

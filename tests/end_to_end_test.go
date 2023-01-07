@@ -1,9 +1,13 @@
-package main
+package tests
 
 import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/hungaikev/rdiff/internal/pkg/apply"
+	"github.com/hungaikev/rdiff/internal/pkg/diff"
+	"github.com/hungaikev/rdiff/internal/pkg/signature"
 )
 
 func TestEndToEnd(t *testing.T) {
@@ -21,7 +25,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	// generate signature for original file
-	original, err := GenerateSignature(tmpOriginal.Name())
+	original, err := signature.GenerateSignature(tmpOriginal.Name())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -40,19 +44,19 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	// generate signature for updated file
-	updated, err := GenerateSignature(tmpUpdated.Name())
+	updated, err := signature.GenerateSignature(tmpUpdated.Name())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
 	// compute delta
-	delta, err := Diff(original, updated)
+	delta, err := diff.Diff(original, updated)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
 	// apply delta to original file
-	if err := Apply(tmpOriginal.Name(), delta); err != nil {
+	if err := apply.Apply(tmpOriginal.Name(), delta); err != nil {
 		t.Errorf("un	expected error: %v", err)
 	}
 

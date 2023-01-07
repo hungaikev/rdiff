@@ -1,7 +1,8 @@
-package main
+package signature
 
 import (
 	"github.com/google/uuid"
+	"github.com/hungaikev/rdiff/internal/shared/models"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -27,17 +28,17 @@ func TestGenerateSignature(t *testing.T) {
 	genID := uuid.New()
 
 	// define expected signature
-	expected := &Signature{
+	expected := &models.Signature{
 		FileSize:  9,
 		CreatedAt: createdAt,
 		ID:        genID,
-		Chunks: []Chunk{
+		Chunks: []models.Chunk{
 			{Start: 0, Data: []byte("test data")},
 		},
 	}
 
 	// run test
-	signature, err := GenerateSignature(tmpFile.Name())
+	signature, err := models.GenerateSignature(tmpFile.Name())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestGenerateSignatureLarge(t *testing.T) {
 	genID := uuid.New()
 	lastModified := time.Now()
 
-	chunks := []Chunk{
+	chunks := []models.Chunk{
 		{Start: 0, Data: []byte("Kenya is a country in Africa and a founding member of the East African Community (EAC).")},
 		{Start: 100, Data: []byte("Uganda is a landlocked country in East Africa.")},
 		{Start: 200, Data: []byte("Rwanda is a landlocked country in the African Great Lakes region.")},
@@ -90,7 +91,7 @@ func TestGenerateSignatureLarge(t *testing.T) {
 	}
 
 	// define expected signature
-	expected := &Signature{
+	expected := &models.Signature{
 		FileSize:     315,
 		CreatedAt:    createdAt,
 		ID:           genID,
@@ -99,7 +100,7 @@ func TestGenerateSignatureLarge(t *testing.T) {
 	}
 
 	// run test
-	signature, err := GenerateSignature(tmpFile.Name())
+	signature, err := models.GenerateSignature(tmpFile.Name())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

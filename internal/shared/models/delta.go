@@ -1,6 +1,8 @@
-package main
+package models
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Delta represents a delta between two files
 type Delta struct {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"expvar"
 	"fmt"
 
@@ -73,7 +74,7 @@ func run(log *zerolog.Logger) error {
 	// =========================================================================
 	// Start API Service
 
-	log.Info().Msg("main: Initializing API support")
+	log.Info().Msg("main: Initializing Service support")
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
@@ -95,10 +96,12 @@ func run(log *zerolog.Logger) error {
 	// =========================================================================
 	// Shutdown
 
+	ctx := log.WithContext(context.Background())
+
 	// Blocking main and waiting for shutdown.
 	select {
 	case err := <-serverErrors:
-		return errors.Wrap(err, "server error")
+		return errors.Wrap(err, "service error")
 
 	case sig := <-shutdown:
 		log.Info().Msgf("main: %v: Start shutdown", sig)

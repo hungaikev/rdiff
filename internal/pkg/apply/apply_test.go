@@ -1,9 +1,11 @@
-package main
+package apply
 
 import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
 func TestApply(t *testing.T) {
@@ -34,12 +36,12 @@ func TestApply(t *testing.T) {
 	}
 
 	// create delta
-	delta := &Delta{
-		Added: []Chunk{
+	delta := &models.Delta{
+		Added: []models.Chunk{
 			{Start: 0, Data: []byte("updated ")},
 			{Start: 8, Data: []byte("data")},
 		},
-		Modified: []Chunk{
+		Modified: []models.Chunk{
 			{Start: 0, Data: []byte("updated ")},
 			{Start: 8, Data: []byte("data")},
 		},

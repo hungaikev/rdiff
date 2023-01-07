@@ -1,7 +1,9 @@
-package main
+package apply
 
 import (
 	"os"
+
+	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
 /*
@@ -14,7 +16,7 @@ Apply applies the changes in the Delta struct to the file at the specified path.
 
 */
 
-func Apply(path string, delta *Delta) error {
+func Apply(path string, delta *models.Delta) error {
 	// create a new file
 	file, err := os.Create(path)
 	if err != nil {

@@ -1,37 +1,17 @@
-package main
+package signature
 
 import (
 	"crypto/sha1"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/hungaikev/rdiff/internal/pkg/fileio"
+	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
-// Signature represents a file signature
-type Signature struct {
-	ID           uuid.UUID // unique identifier for the signature
-	FileSize     int64     // size of the file in bytes
-	FilePath     string    // path to the file
-	LastModified time.Time // last modified timestamp
-	CreatedAt    time.Time // timestamp for when the signature was created
-	Chunks       []Chunk   // chunks of the file
-}
-
 const chunkSize = 8192 // size of each chunk in bytes
-
-// Print prints the signature to stdout
-func (s *Signature) Print() {
-	fmt.Println("File size:", s.FileSize)
-	fmt.Println("File path:", s.FilePath)
-	fmt.Println("Created at:", s.CreatedAt)
-	fmt.Println("ID:", s.ID)
-	fmt.Println("Chunks:")
-	for _, chunk := range s.Chunks {
-		fmt.Printf("  start: %d, data: %s\n", chunk.Start, chunk.Data)
-	}
-}
 
 /*
 GenerateSignature generates a signature for the file at the given path.
@@ -44,9 +24,9 @@ GenerateSignature generates a signature for the file at the given path.
 6. For each chunk, it calculates the rolling hash value by adding the chunk data to the hash value using hash.Write, creates a new Chunk struct, and adds it to the Chunks slice of the Signature struct.
 7. Returns the Signature pointer and a nil error value if successful, or returns a nil pointer and an error value if there was an error.
 */
-func GenerateSignature(path string) (*Signature, error) {
+func GenerateSignature(path string) (*models.Signature, error) {
 	// open the file
-	file, err := OpenFile(path)
+	file, err := fileio.OpenFile(path)
 	defer file.Close()
 
 	// get file info
@@ -56,12 +36,12 @@ func GenerateSignature(path string) (*Signature, error) {
 	}
 
 	// create a new signature
-	sig := &Signature{
+	sig := &models.Signature{
 		ID:           uuid.New(),
 		FileSize:     info.Size(),
 		LastModified: info.ModTime(),
 		CreatedAt:    time.Now(),
-		Chunks:       make([]Chunk, 0),
+		Chunks:       make([]models.Chunk, 0),
 	}
 
 	// create a rolling hash value
@@ -83,7 +63,7 @@ func GenerateSignature(path string) (*Signature, error) {
 		hash.Write(buf[:n])
 
 		// create a new chunk
-		c := Chunk{
+		c := models.Chunk{
 			Start: int64(len(sig.Chunks)) * chunkSize,
 			Data:  buf[:n],
 		}
