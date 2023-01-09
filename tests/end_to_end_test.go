@@ -47,8 +47,6 @@ func TestEndToEnd(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	original.Print()
-
 	// compute delta
 	delta, err := diff.Diff(original, updated)
 	if err != nil {
