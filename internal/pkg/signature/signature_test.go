@@ -38,7 +38,7 @@ func TestGenerateSignature(t *testing.T) {
 	}
 
 	// run test
-	signature, err := models.GenerateSignature(tmpFile.Name())
+	signature, err := GenerateSignature(tmpFile)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestGenerateSignatureLarge(t *testing.T) {
 	}
 
 	// run test
-	signature, err := models.GenerateSignature(tmpFile.Name())
+	signature, err := GenerateSignature(tmpFile)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
