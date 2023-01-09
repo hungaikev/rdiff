@@ -20,12 +20,12 @@ func TestEndToEnd(t *testing.T) {
 	if _, err := tmpOriginal.Write([]byte("original data")); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	if err := tmpOriginal.Close(); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	defer tmpOriginal.Close()
+
+	tmpOriginal.Stat()
 
 	// generate signature for original file
-	original, err := signature.GenerateSignature(tmpOriginal.Name())
+	original, err := signature.GenerateSignature(tmpOriginal)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -39,12 +39,10 @@ func TestEndToEnd(t *testing.T) {
 	if _, err := tmpUpdated.Write([]byte("updated data")); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	if err := tmpUpdated.Close(); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	defer tmpUpdated.Close()
 
 	// generate signature for updated file
-	updated, err := signature.GenerateSignature(tmpUpdated.Name())
+	updated, err := signature.GenerateSignature(tmpUpdated)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
