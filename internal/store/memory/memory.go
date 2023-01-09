@@ -81,3 +81,15 @@ func (s *Storage) FileExists(filename string) (bool, error) {
 	}
 	return false, nil
 }
+
+func (s *Storage) GetSignatureForFilename(filename string) (*models.Signature, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, sig := range s.signatures {
+		if sig.FilePath == filename {
+			return sig, nil
+		}
+	}
+	return nil, fmt.Errorf("signature not found")
+}

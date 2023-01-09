@@ -3,11 +3,11 @@ package signature
 import (
 	"crypto/sha1"
 	"io"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
 
-	"github.com/hungaikev/rdiff/internal/pkg/fileio"
 	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
@@ -24,9 +24,7 @@ GenerateSignature generates a signature for the file at the given path.
 6. For each chunk, it calculates the rolling hash value by adding the chunk data to the hash value using hash.Write, creates a new Chunk struct, and adds it to the Chunks slice of the Signature struct.
 7. Returns the Signature pointer and a nil error value if successful, or returns a nil pointer and an error value if there was an error.
 */
-func GenerateSignature(path string) (*models.Signature, error) {
-	// open the file
-	file, err := fileio.OpenFile(path)
+func GenerateSignature(file *os.File) (*models.Signature, error) {
 	defer file.Close()
 
 	// get file info

@@ -18,4 +18,10 @@ type Storage interface {
 
 	// GetSignatureForChunk retrieves the signature that contains the given chunk
 	GetSignatureForChunk(chunk models.Chunk) (*models.Signature, error)
+
+	// FileExists checks if the given file exists in storage
+	FileExists(filename string) (bool, error)
+
+	// GetSignatureForFilename retrieves the signature that contains the given file
+	GetSignatureForFilename(filename string) (*models.Signature, error)
 }
