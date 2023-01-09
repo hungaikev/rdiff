@@ -1,15 +1,16 @@
+// Package logic implements the business logic of the application.
 package logic
 
 import (
 	"context"
 	"fmt"
-	"github.com/hungaikev/rdiff/internal/pkg/apply"
-	"github.com/hungaikev/rdiff/internal/pkg/diff"
-	"github.com/hungaikev/rdiff/internal/pkg/signature"
 	"os"
 
 	"github.com/rs/zerolog"
 
+	"github.com/hungaikev/rdiff/internal/pkg/apply"
+	"github.com/hungaikev/rdiff/internal/pkg/diff"
+	"github.com/hungaikev/rdiff/internal/pkg/signature"
 	"github.com/hungaikev/rdiff/internal/shared/models"
 	"github.com/hungaikev/rdiff/internal/store"
 )

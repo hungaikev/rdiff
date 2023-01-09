@@ -1,3 +1,4 @@
+// Package signature implements functions for generating and comparing file signatures.
 package signature
 
 import (

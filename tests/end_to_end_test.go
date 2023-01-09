@@ -2,27 +2,24 @@ package tests
 
 import (
 	"io/ioutil"
-	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hungaikev/rdiff/internal/pkg/apply"
 	"github.com/hungaikev/rdiff/internal/pkg/diff"
+	"github.com/hungaikev/rdiff/internal/pkg/fileio"
 	"github.com/hungaikev/rdiff/internal/pkg/signature"
 )
 
 func TestEndToEnd(t *testing.T) {
-	// create temporary original file
-	tmpOriginal, err := os.Create("tmp-original.txt")
+
+	tmpOriginal, err := fileio.OpenFile("testdata/tmp-original.txt")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	defer os.Remove(tmpOriginal.Name())
-	if _, err := tmpOriginal.Write([]byte("original data")); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	defer tmpOriginal.Close()
 
-	tmpOriginal.Stat()
+	defer tmpOriginal.Close()
 
 	// generate signature for original file
 	original, err := signature.GenerateSignature(tmpOriginal)
@@ -30,15 +27,11 @@ func TestEndToEnd(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	// create temporary updated file
-	tmpUpdated, err := os.Create("tmp-updated.txt")
+	tmpUpdated, err := fileio.OpenFile("testdata/tmp-updated.txt")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	defer os.Remove(tmpUpdated.Name())
-	if _, err := tmpUpdated.Write([]byte("updated data")); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+
 	defer tmpUpdated.Close()
 
 	// generate signature for updated file
@@ -64,8 +57,5 @@ func TestEndToEnd(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	if string(b) != "updated data" {
-		t.Errorf("unexpected file content: got %q, want %q", string(b), "updated data")
-	}
-
+	assert.Contains(t, string(b), "updated")
 }

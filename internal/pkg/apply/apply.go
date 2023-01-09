@@ -1,3 +1,4 @@
+// Package apply implements the apply function.
 package apply
 
 import (

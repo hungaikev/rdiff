@@ -1,3 +1,4 @@
+// Package store is a package that contains the storage interface used by the application.
 package store
 
 import (

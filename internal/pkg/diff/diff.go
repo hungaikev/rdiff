@@ -1,3 +1,4 @@
+// Package diff implements the diff function.
 package diff
 
 import (

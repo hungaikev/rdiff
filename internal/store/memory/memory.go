@@ -1,3 +1,4 @@
+// Package memory implements the storage interface for the memory storage
 package memory
 
 import (
