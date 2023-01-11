@@ -33,7 +33,7 @@ func TestGenerateSignature(t *testing.T) {
 		CreatedAt: createdAt,
 		ID:        genID,
 		Chunks: []models.Chunk{
-			{Start: 0, Data: []byte("test data")},
+			{Offset: 0, Data: []byte("test data")},
 		},
 	}
 
@@ -83,11 +83,11 @@ func TestGenerateSignatureLarge(t *testing.T) {
 	lastModified := time.Now()
 
 	chunks := []models.Chunk{
-		{Start: 0, Data: []byte("Kenya is a country in Africa and a founding member of the East African Community (EAC).")},
-		{Start: 100, Data: []byte("Uganda is a landlocked country in East Africa.")},
-		{Start: 200, Data: []byte("Rwanda is a landlocked country in the African Great Lakes region.")},
-		{Start: 300, Data: []byte("Tanzania is a country in East Africa within the African Great Lakes region.")},
-		{Start: 400, Data: []byte("EAC Trades in Goods and Services")},
+		{Offset: 0, Data: []byte("Kenya is a country in Africa and a founding member of the East African Community (EAC).")},
+		{Offset: 100, Data: []byte("Uganda is a landlocked country in East Africa.")},
+		{Offset: 200, Data: []byte("Rwanda is a landlocked country in the African Great Lakes region.")},
+		{Offset: 300, Data: []byte("Tanzania is a country in East Africa within the African Great Lakes region.")},
+		{Offset: 400, Data: []byte("EAC Trades in Goods and Services")},
 	}
 
 	// define expected signature

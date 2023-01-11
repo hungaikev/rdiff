@@ -2,6 +2,7 @@
 package signature
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"io"
 	"os"
@@ -63,8 +64,8 @@ func GenerateSignature(file *os.File) (*models.Signature, error) {
 
 		// create a new chunk
 		c := models.Chunk{
-			Start: int64(len(sig.Chunks)) * chunkSize,
-			Data:  buf[:n],
+			Offset: int64(len(sig.Chunks)) * chunkSize,
+			Data:   buf[:n],
 		}
 
 		// add the chunk to the signature
@@ -72,4 +73,23 @@ func GenerateSignature(file *os.File) (*models.Signature, error) {
 	}
 
 	return sig, nil
+}
+
+// ValidateSignature checks if the two given signatures are the same
+func ValidateSignature(sig1, sig2 *models.Signature) bool {
+	if sig1.FileSize != sig2.FileSize {
+		return false
+	}
+	if sig1.LastModified != sig2.LastModified {
+		return false
+	}
+	if len(sig1.Chunks) != len(sig2.Chunks) {
+		return false
+	}
+	for i := range sig1.Chunks {
+		if !bytes.Equal(sig1.Chunks[i].Data, sig2.Chunks[i].Data) {
+			return false
+		}
+	}
+	return true
 }

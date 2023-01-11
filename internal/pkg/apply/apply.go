@@ -46,7 +46,7 @@ func Apply(originalFile string, delta *models.Delta) error {
 		}
 	}
 	for _, chunk := range delta.Modified {
-		if _, err := updated.WriteAt(chunk.Data, chunk.Start); err != nil {
+		if _, err := updated.WriteAt(chunk.Data, chunk.Offset); err != nil {
 			return fmt.Errorf("error writing modified chunk to updated file: %w", err)
 		}
 	}
