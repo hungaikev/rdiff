@@ -2,94 +2,46 @@
 package signature
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"io"
+	"context"
+	"fmt"
+	"go.opentelemetry.io/otel"
 	"os"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/hungaikev/rdiff/internal/pkg/chunks"
 	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
-const chunkSize = 8192 // size of each chunk in bytes
+var tracer = otel.Tracer("signature")
 
-/*
-GenerateSignature generates a signature for the file at the given path.
+// Generate generates a new signature for the given file and returns it
+func Generate(ctx context.Context, file *os.File) (*models.Signature, error) {
+	ctx, span := tracer.Start(ctx, "signature.Generate")
+	defer span.End()
 
-1. Opens the file at the given path using os.Open.
-2. Retrieves the file information using file.Stat.
-3. Creates a new Signature struct and initializes its fields with the file size, last modified timestamp, and current timestamp.
-4. Creates a new SHA1 hash value using sha1.New.
-5. Reads the file chunk by chunk using a for loop.
-6. For each chunk, it calculates the rolling hash value by adding the chunk data to the hash value using hash.Write, creates a new Chunk struct, and adds it to the Chunks slice of the Signature struct.
-7. Returns the Signature pointer and a nil error value if successful, or returns a nil pointer and an error value if there was an error.
-*/
-func GenerateSignature(file *os.File) (*models.Signature, error) {
-	defer file.Close()
-
-	// get file info
-	info, err := file.Stat()
+	// get file information
+	fileInfo, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get file information: %w", err)
+	}
+
+	// generate chunks
+	chunks, err := chunks.Generate(ctx, file)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate chunks: %w", err)
 	}
 
 	// create a new signature
-	sig := &models.Signature{
+	signature := &models.Signature{
 		ID:           uuid.New(),
-		FileSize:     info.Size(),
-		LastModified: info.ModTime(),
-		CreatedAt:    time.Now(),
-		Chunks:       make([]models.Chunk, 0),
+		FileSize:     fileInfo.Size(),
+		FilePath:     file.Name(),
+		LastModified: fileInfo.ModTime(),
+		CreatedAt:    time.Now().UTC(),
+		Chunks:       chunks,
 	}
 
-	// create a rolling hash value
-	hash := sha1.New()
-
-	// read the file chunk by chunk
-	buf := make([]byte, chunkSize)
-	for {
-		// read a chunk
-		n, err := file.Read(buf)
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		if n == 0 {
-			break
-		}
-
-		// add the chunk data to the rolling hash
-		hash.Write(buf[:n])
-
-		// create a new chunk
-		c := models.Chunk{
-			Offset: int64(len(sig.Chunks)) * chunkSize,
-			Data:   buf[:n],
-		}
-
-		// add the chunk to the signature
-		sig.Chunks = append(sig.Chunks, c)
-	}
-
-	return sig, nil
-}
-
-// ValidateSignature checks if the two given signatures are the same
-func ValidateSignature(sig1, sig2 *models.Signature) bool {
-	if sig1.FileSize != sig2.FileSize {
-		return false
-	}
-	if sig1.LastModified != sig2.LastModified {
-		return false
-	}
-	if len(sig1.Chunks) != len(sig2.Chunks) {
-		return false
-	}
-	for i := range sig1.Chunks {
-		if !bytes.Equal(sig1.Chunks[i].Data, sig2.Chunks[i].Data) {
-			return false
-		}
-	}
-	return true
+	return signature, nil
 }

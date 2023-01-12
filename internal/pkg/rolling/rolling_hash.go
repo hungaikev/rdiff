@@ -1,5 +1,11 @@
 package rolling
 
+import (
+	"context"
+
+	"go.opentelemetry.io/otel"
+)
+
 /**
 
 The Hash function calculates the rolling hash value for a given slice of bytes using the Rolling Hash algorithm. Here is a step-by-step breakdown of how the function works:
@@ -13,8 +19,13 @@ The Hash function calculates the rolling hash value for a given slice of bytes u
 
 */
 
+var tracer = otel.Tracer("rolling")
+
 // Hash calculates the rolling hash value for the given data using the Rolling Hash algorithm
-func Hash(data []byte) uint64 {
+func Hash(ctx context.Context, data []byte) uint64 {
+	ctx, span := tracer.Start(ctx, "rolling.Hash")
+	defer span.End()
+
 	// the length of the data
 	n := len(data)
 
@@ -40,7 +51,10 @@ func Hash(data []byte) uint64 {
 }
 
 // FromRollingHash converts the given rolling hash value back into the original data
-func FromRollingHash(hash uint64, n int) []byte {
+func FromRollingHash(ctx context.Context, hash uint64, n int) []byte {
+	ctx, span := tracer.Start(ctx, "rolling.FromRollingHash")
+	defer span.End()
+
 	// the original data
 	data := make([]byte, n)
 

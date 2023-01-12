@@ -3,19 +3,27 @@ package diff
 
 import (
 	"bytes"
+	"context"
+
+	"go.opentelemetry.io/otel"
 
 	"github.com/hungaikev/rdiff/internal/shared/models"
 )
 
+var tracer = otel.Tracer("diff")
+
 /*
-Diff compares the original and updated signatures and returns a Delta struct containing the differences between the two.
+Compare compares the original and updated signatures and returns a Delta struct containing the differences between the two.
 
 1. Creates a new Delta struct and initializes its fields with empty slices and a map.
 2. Compares the number of chunks in the original and updated signatures. If they are not the same, it assumes that the entire file has been modified and sets the Modified field of the Delta struct to the Chunks field of the updated signature.
 3. If the number of chunks is the same, it compares the rolling hash values of each chunk using a for loop. If the hash values are different, it assumes that the chunk has been modified and adds it to the Modified field of the Delta struct.
 4. Returns the Delta pointer and a nil error value if successful, or returns a nil pointer and an error value if there was an error.
 */
-func Diff(original, updated *models.Signature) (*models.Delta, error) {
+func Compare(ctx context.Context, original, updated *models.Signature) (*models.Delta, error) {
+	ctx, span := tracer.Start(ctx, "diff.Compare")
+	defer span.End()
+
 	// create a new delta
 	delta := &models.Delta{
 		Added:    make([]models.Chunk, 0),

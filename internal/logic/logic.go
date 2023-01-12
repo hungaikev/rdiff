@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/hungaikev/rdiff/internal/pkg/apply"
 	"github.com/hungaikev/rdiff/internal/pkg/diff"
@@ -19,59 +20,81 @@ import (
 type Logic struct {
 	log     *zerolog.Logger
 	storage store.Storage
+	tracer  trace.Tracer
 }
 
 // New creates an instance of the Logic implementation
-func New(log *zerolog.Logger, storage store.Storage) *Logic {
+func New(log *zerolog.Logger, storage store.Storage, tracer trace.Tracer) *Logic {
 	return &Logic{
 		log:     log,
 		storage: storage,
+		tracer:  tracer,
 	}
 }
 
+// Handle handles the application logic for the given library
 func (l *Logic) Handle(ctx context.Context, file *os.File) (*models.Delta, error) {
+	ctx, span := l.tracer.Start(ctx, "logic.Handle")
+	defer span.End()
+
 	// step 1: check if file exists in storage
-	exists, err := l.storage.FileExists(file.Name())
+	exists, err := l.storage.FileExists(ctx, file.Name())
 	if err != nil {
 		return nil, fmt.Errorf("error checking if file exists: %w", err)
 	}
 
+	// step 2: Signature generation
 	var original *models.Signature
+	var delta *models.Delta
 	if exists {
-		// step 2: retrieve the signature
-		original, err = l.storage.GetSignatureForFilename(file.Name())
+		// step 2: retrieve the signature if file exists
+		original, err = l.storage.GetSignatureForFilename(ctx, file.Name())
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving signature: %w", err)
 		}
-	}
 
-	// step 3: generate the signature of the new file and store it
-	updated, err := signature.GenerateSignature(file)
-	if err != nil {
-		return nil, fmt.Errorf("error generating signature: %w", err)
-	}
-	if err := l.storage.Save(updated); err != nil {
-		return nil, fmt.Errorf("error saving signature: %w", err)
-	}
+		// step 2.1 generate the signature of the updated file.
+		updated, err := signature.Generate(ctx, file)
+		if err != nil {
+			return nil, fmt.Errorf("error generating signature: %w", err)
+		}
 
-	var delta *models.Delta
-	if exists {
-		// step 4: run the Diff method
-		delta, err = diff.Diff(original, updated)
+		// step 2.2: run the Diff method
+		delta, err = diff.Compare(ctx, original, updated)
 		if err != nil {
 			return nil, fmt.Errorf("error running Diff: %w", err)
 		}
+
+		// Print out the delta
+		delta.Print()
+
+		// instantiate a new apply
+		apply := apply.New(delta, l.storage, l.log, l.tracer)
+
+		// step 2.3: run apply to synchronize the files
+		newSig, err := apply.Changes(ctx, original)
+		if err != nil {
+			return nil, fmt.Errorf("error applying changes: %w", err)
+		}
+
+		original = newSig
+
+		return delta, nil
+
 	}
 
-	// step 5: run Apply to synchronize the files
-	if err := apply.Apply(original.FilePath, delta); err != nil {
-		return nil, fmt.Errorf("error running Apply: %w", err)
+	// step 3: generate the signature of the new file and store it
+	updated, err := signature.Generate(ctx, file)
+	if err != nil {
+		return nil, fmt.Errorf("error generating signature: %w", err)
 	}
+
+	saved, err := l.storage.Save(ctx, updated)
+	if err != nil {
+		return nil, fmt.Errorf("error saving signature: %w", err)
+	}
+
+	original = saved
 
 	return delta, nil
-}
-
-func (l *Logic) Shutdown() error {
-
-	return nil
 }

@@ -1,8 +1,14 @@
 package rolling
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestRollingHash(t *testing.T) {
+
+	ctx := context.Background()
+
 	tests := []struct {
 		data   []byte
 		result uint64
@@ -14,7 +20,7 @@ func TestRollingHash(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := Hash(test.data)
+		result := Hash(ctx, test.data)
 		if result != test.result {
 			t.Errorf("unexpected result for data %v: got %d, want %d", test.data, result, test.result)
 		}
