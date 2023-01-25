@@ -2,6 +2,7 @@ package chunks
 
 import (
 	"context"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ var tracer = otel.Tracer("chunks")
 const chunkSize = 8192 // size of each chunk in bytes
 
 // Generate reads the given file chunk by chunk and returns a slice of Chunk structs
-func Generate(ctx context.Context, file *os.File) ([]models.Chunk, error) {
+func Generate(ctx context.Context, file *os.File, log *zerolog.Logger) ([]models.Chunk, error) {
 	ctx, span := tracer.Start(ctx, "chunks.Generate")
 	defer span.End()
 
@@ -62,6 +63,8 @@ func Generate(ctx context.Context, file *os.File) ([]models.Chunk, error) {
 		chunks = append(chunks, chunk)
 
 	}
+
+	log.Info().Msgf("generated %d chunks for file %s", len(chunks), file.Name())
 
 	return chunks, nil
 }

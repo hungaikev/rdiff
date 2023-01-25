@@ -26,7 +26,6 @@ func (s *Signature) Print() {
 	fmt.Println("Created at: ", s.CreatedAt)
 	fmt.Println("Number of chunks: ", len(s.Chunks))
 	for _, chunk := range s.Chunks {
-		fmt.Println("Chunk: ")
 		chunk.Print()
 	}
 }

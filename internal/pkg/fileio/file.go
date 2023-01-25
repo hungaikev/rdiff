@@ -2,10 +2,8 @@
 package fileio
 
 import (
-	"bufio"
 	"context"
 	"os"
-	"strings"
 
 	"go.opentelemetry.io/otel"
 )
@@ -28,20 +26,22 @@ func OpenFile(ctx context.Context, filename string) (*os.File, error) {
 	return file, nil
 }
 
-// ReadFile reads a file and returns the contents as a string, along with an error value.
-func ReadFile(ctx context.Context, file *os.File) (string, error) {
-	ctx, span := tracer.Start(ctx, "fileio.ReadFile")
+// WriteToFile writes to a file
+func WriteToFile(ctx context.Context, filePath string, data string) error {
+	ctx, span := tracer.Start(ctx, "fileio.WriteToFile")
 	defer span.End()
-	
-	// Create a new scanner to read the file
-	scanner := bufio.NewScanner(file)
 
-	// Use the Scan function to iterate through the lines of the file
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	// Open the file in write mode
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
 	}
 
-	// Return the contents of the file as a single string
-	return strings.Join(lines, "\n"), scanner.Err()
+	// Write the data to the file
+	_, err = file.WriteString(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

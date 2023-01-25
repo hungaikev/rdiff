@@ -4,15 +4,17 @@ import (
 	"context"
 	"expvar"
 	"fmt"
-
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/ardanlabs/conf/v3"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
+	"math/rand"
+	"os"
+	"time"
+
+	"github.com/hungaikev/rdiff/internal/logic"
+	"github.com/hungaikev/rdiff/internal/pkg/fileio"
+	"github.com/hungaikev/rdiff/internal/store/memory"
 )
 
 const (
@@ -20,6 +22,8 @@ const (
 	LogStrKeyModule = "module"
 	// LogStrKeyService is for use with the logger as a key to specify the service name.
 	LogStrKeyService = "service"
+
+	filePath = "cmd/filestorage/files/test.txt"
 )
 
 // build is the git version of this program. It is set using build flags in the makefile.
@@ -72,48 +76,78 @@ func run(log *zerolog.Logger) error {
 	log.Info().Msgf("Config:\n%v\n", out)
 
 	// =========================================================================
-	// Start API Service
+	// Tracer
 
-	log.Info().Msg("main: Initializing Service support")
-
-	// Make a channel to listen for an interrupt or terminate signal from the OS.
-	// Use a buffered channel because the signal package requires it.
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
-
-	// Make a channel to listen for errors coming from the listener. Use a
-	// buffered channel so the goroutine can exit if we don't collect this error.
-	serverErrors := make(chan error, 1)
-
-	api := http.Server{}
-
-	// Start the service listening for requests.
-	go func() {
-		log.Info().Msgf("main: API listening on %s", api.Addr)
-		serverErrors <- api.ListenAndServe()
-	}()
+	var tracer = otel.Tracer("main")
 
 	// =========================================================================
-	// Shutdown
+	// Storage
 
-	ctx := log.WithContext(context.Background())
+	storage := memory.New(log, tracer)
 
-	// Blocking main and waiting for shutdown.
-	select {
-	case err := <-serverErrors:
-		return errors.Wrap(err, "service error")
+	// =========================================================================
+	// Logic
 
-	case sig := <-shutdown:
-		log.Info().Msgf("main: %v: Start shutdown", sig)
+	rdiffLogic := logic.New(log, storage, tracer)
 
-		// Asking listener to shut down and shed load.
-		if err := api.Shutdown(ctx); err != nil {
-			if err := api.Close(); err != nil {
-				return errors.Wrap(err, "could not stop server gracefully")
-			}
-			return errors.Wrap(err, "could not stop server")
-		}
+	// =========================================================================
+	// Open File
+
+	ctx := context.Background()
+
+	log.Info().Msg("Opening file...")
+
+	file, err := fileio.OpenFile(ctx, filePath)
+	if err != nil {
+		return fmt.Errorf("error opening file: %w", err)
+	}
+
+	defer file.Close()
+
+	// =========================================================================
+	// Handle File
+	_, err = rdiffLogic.Handle(ctx, file)
+	if err != nil {
+		return fmt.Errorf("error handling file: %w", err)
+	}
+
+	// =========================================================================
+
+	log.Info().Msgf("File %s has been processed successfully", filePath)
+
+	// =========================================================================
+
+	log.Info().Msgf("Writing to file %s", filePath)
+
+	if err := fileio.WriteToFile(ctx, filePath, generateRandomString(100)); err != nil {
+		return fmt.Errorf("error writing to file: %w", err)
+	}
+
+	file2, err := fileio.OpenFile(ctx, filePath)
+	if err != nil {
+		return fmt.Errorf("error opening file: %w", err)
+	}
+
+	defer file2.Close()
+
+	_, err = rdiffLogic.Handle(ctx, file2)
+	if err != nil {
+		return fmt.Errorf("error handling file 2: %w", err)
 	}
 
 	return nil
+}
+
+func generateRandomString(length int) string {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
+	// Define a set of characters to use in the random string
+	charSet := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	// Create an empty slice of bytes with the specified length
+	bytes := make([]byte, length)
+	// Fill the slice with random characters
+	for i := range bytes {
+		bytes[i] = charSet[rand.Intn(len(charSet))]
+	}
+	return string(bytes)
 }

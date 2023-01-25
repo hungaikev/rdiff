@@ -15,11 +15,11 @@ type Delta struct {
 func (d *Delta) Print() {
 	fmt.Println("Added chunks:")
 	for _, chunk := range d.Added {
-		fmt.Printf("  start: %d, data: %s\n", chunk.Start, chunk.Data)
+		fmt.Printf("  start: %d, data: %s\n", chunk.Offset, chunk.Data)
 	}
 	fmt.Println("Modified chunks:")
 	for _, chunk := range d.Modified {
-		fmt.Printf("  start: %d, data: %s\n", chunk.Start, chunk.Data)
+		fmt.Printf("  start: %d, data: %s\n", chunk.Offset, chunk.Data)
 	}
 	fmt.Println("Metadata:")
 	for key, value := range d.Metadata {

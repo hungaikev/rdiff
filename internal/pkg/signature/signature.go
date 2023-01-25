@@ -4,6 +4,7 @@ package signature
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel"
 	"os"
 	"time"
@@ -17,7 +18,7 @@ import (
 var tracer = otel.Tracer("signature")
 
 // Generate generates a new signature for the given file and returns it
-func Generate(ctx context.Context, file *os.File) (*models.Signature, error) {
+func Generate(ctx context.Context, file *os.File, log *zerolog.Logger) (*models.Signature, error) {
 	ctx, span := tracer.Start(ctx, "signature.Generate")
 	defer span.End()
 
@@ -28,7 +29,7 @@ func Generate(ctx context.Context, file *os.File) (*models.Signature, error) {
 	}
 
 	// generate chunks
-	chunks, err := chunks.Generate(ctx, file)
+	chunks, err := chunks.Generate(ctx, file, log)
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate chunks: %w", err)
 	}
@@ -42,6 +43,9 @@ func Generate(ctx context.Context, file *os.File) (*models.Signature, error) {
 		CreatedAt:    time.Now().UTC(),
 		Chunks:       chunks,
 	}
+
+	log.Info().Msgf("generated signature for file %s", file.Name())
+	signature.Print()
 
 	return signature, nil
 }

@@ -37,6 +37,8 @@ func (l *Logic) Handle(ctx context.Context, file *os.File) (*models.Delta, error
 	ctx, span := l.tracer.Start(ctx, "logic.Handle")
 	defer span.End()
 
+	l.log.Info().Msgf("handling diff logic: %s", file.Name())
+
 	// step 1: check if file exists in storage
 	exists, err := l.storage.FileExists(ctx, file.Name())
 	if err != nil {
@@ -54,7 +56,7 @@ func (l *Logic) Handle(ctx context.Context, file *os.File) (*models.Delta, error
 		}
 
 		// step 2.1 generate the signature of the updated file.
-		updated, err := signature.Generate(ctx, file)
+		updated, err := signature.Generate(ctx, file, l.log)
 		if err != nil {
 			return nil, fmt.Errorf("error generating signature: %w", err)
 		}
@@ -64,9 +66,6 @@ func (l *Logic) Handle(ctx context.Context, file *os.File) (*models.Delta, error
 		if err != nil {
 			return nil, fmt.Errorf("error running Diff: %w", err)
 		}
-
-		// Print out the delta
-		delta.Print()
 
 		// instantiate a new apply
 		apply := apply.New(delta, l.storage, l.log, l.tracer)
@@ -84,10 +83,11 @@ func (l *Logic) Handle(ctx context.Context, file *os.File) (*models.Delta, error
 	}
 
 	// step 3: generate the signature of the new file and store it
-	updated, err := signature.Generate(ctx, file)
+	updated, err := signature.Generate(ctx, file, l.log)
 	if err != nil {
 		return nil, fmt.Errorf("error generating signature: %w", err)
 	}
+	l.log.Info().Msgf("generated signature for file: %s", file.Name())
 
 	saved, err := l.storage.Save(ctx, updated)
 	if err != nil {

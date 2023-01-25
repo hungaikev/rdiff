@@ -4,11 +4,12 @@ package apply
 import (
 	"context"
 	"fmt"
-	"os"
-
+	"github.com/hungaikev/rdiff/internal/pkg/fileio"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
+	"os"
 
 	"github.com/hungaikev/rdiff/internal/pkg/signature"
 	"github.com/hungaikev/rdiff/internal/shared/models"
@@ -39,30 +40,44 @@ func (a *Apply) Changes(ctx context.Context, originalSig *models.Signature) (*mo
 	ctx, span := a.tracer.Start(ctx, "apply.changes")
 	defer span.End()
 
-	// open the original file
-	original, err := os.Open(originalSig.FilePath)
-	if err != nil {
-		return &models.Signature{}, fmt.Errorf("error opening original file: %w", err)
-	}
-	defer original.Close()
+	var g errgroup.Group
+	var original *os.File
 
-	// apply the changes to the original file
-	for _, chunk := range a.delta.Added {
-		if _, err := original.Write(chunk.Data); err != nil {
-			return &models.Signature{}, fmt.Errorf("error writing added chunk to updated file: %w", err)
+	g.Go(func() error {
+		// open the original file
+		original, err := fileio.OpenFile(ctx, originalSig.FilePath)
+		if err != nil {
+			return fmt.Errorf("error opening original file: %w", err)
 		}
-	}
-	for _, chunk := range a.delta.Modified {
-		if _, err := original.WriteAt(chunk.Data, chunk.Offset); err != nil {
-			return &models.Signature{}, fmt.Errorf("error writing modified chunk to updated file: %w", err)
+
+		defer original.Close()
+
+		// apply the changes to the original file
+		for _, chunk := range a.delta.Added {
+			if _, err := original.Write(chunk.Data); err != nil {
+				return fmt.Errorf("error writing added chunk to updated file: %w", err)
+			}
 		}
+		for _, chunk := range a.delta.Modified {
+			if _, err := original.WriteAt(chunk.Data, chunk.Offset); err != nil {
+				a.log.Error().Msgf("error writing modified chunk to updated file: %v", err)
+				return fmt.Errorf("error writing modified chunk to updated file: %w", err)
+			}
+		}
+
+		return nil
+
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("error applying changes: %w", err)
 	}
 
 	a.log.Info().Msgf("Changes applied successfully - original file updated: %s", original.Name())
 	a.delta.Print()
 
 	// generate the signature of the updated file.
-	newSig, err := signature.Generate(ctx, original)
+	newSig, err := signature.Generate(ctx, original, a.log)
 	if err != nil {
 		return &models.Signature{}, fmt.Errorf("error generating signature: %w", err)
 	}
